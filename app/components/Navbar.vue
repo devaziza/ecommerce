@@ -83,7 +83,7 @@ const sidebarClasses = computed(
             <!-- Logo -->
             <a
               href="#"
-              class="ml-2 lg:ml-0 text-2xl font-bold text-[#111827] tracking-tight hover:text-accent transition-colors duration-300"
+              class="ml-2 lg:ml-0 text-2xl font-bold text-pink-600 tracking-tight hover:text-accent transition-colors duration-300"
             >
               Luxe
             </a>
