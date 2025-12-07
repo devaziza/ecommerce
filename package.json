@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@guizmo-ai/zai-cli": "^0.3.5",
     "@pinia/nuxt": "^0.11.3",
     "axios": "^1.13.2",
     "nuxt": "^4.2.1",

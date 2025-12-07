@@ -25,11 +25,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo("/");
   }
 
-  // Redirect admin from login/register to admin dashboard
-  if (user && user.role === "admin" && (to.path === "/login" || to.path === "/register")) {
-    return navigateTo("/admin");
-  }
-
   // Allow authenticated users to access other pages
   return;
 });

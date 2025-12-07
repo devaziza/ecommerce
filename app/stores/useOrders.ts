@@ -18,15 +18,12 @@ export const useOrderStore = defineStore("orders", () => {
   // ======================
   async function fetchOrders() {
     try {
-      const token = useCookie("token").value;
       loading.value = true;
       error.value = null;
-      const data = await $fetch<Order[]>(`${apiBase}/api/orders`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const data = await $fetch<{ orders: Order[] }>(`${apiBase}/api/orders`, {
+        credentials: "include",
       });
-      orders.value = data;
+      orders.value = data.orders || [];
     } catch (err: any) {
       error.value = err.statusMessage || "Failed to load orders.";
     } finally {
@@ -39,18 +36,17 @@ export const useOrderStore = defineStore("orders", () => {
   // ======================
   async function fetchOrderDetail(id: number) {
     try {
-      const token = useCookie("token").value;
       loading.value = true;
       error.value = null;
       const data = await $fetch<OrderDetail>(`${apiBase}/api/orders/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       });
 
       orderDetail.value = { ...data };
+      return data;
     } catch (err: any) {
       error.value = err.statusMessage || "Failed to load order details.";
+      return null;
     } finally {
       loading.value = false;
     }
@@ -61,31 +57,24 @@ export const useOrderStore = defineStore("orders", () => {
   // ======================
   async function createOrder() {
   try {
-    const token = useCookie("token").value;
     const cartStore = useCartStore();
-    console.log("Creating order with cart items:", cartStore);
+    console.log("Creating order with cart items:", cartStore.cart);
     loading.value = true;
     error.value = null;
-    if (!cartStore.cartItems.length) {
-      throw new Error("Savatcha bo‘sh");
+    if (!cartStore.cart.length) {
+      throw new Error("Cart is empty");
     }
 
     const data = await $fetch(`${apiBase}/api/orders`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: {
-        items: cartStore.cartItems.map((i) => ({
-          product_id: i.product.id,
-          quantity: i.quantity,
-          price: i.product.price,
-        })),
-      },
+      credentials: "include",
     });
 
     cartStore.clearCart();
     return data;
   } catch (err: any) {
-    console.error("❌ Order yaratishda xato:", err);
+    console.error("❌ Order creation error:", err);
+    throw err;
   } finally {
       loading.value = false;
     }
@@ -98,10 +87,12 @@ export const useOrderStore = defineStore("orders", () => {
     try {
       loading.value = true;
       error.value = null;
-      const updated = await $fetch<Order>(`${apiBase}/api/orders/${id}/status`, {
+      const data = await $fetch<{ order: Order }>(`${apiBase}/api/orders/${id}/status`, {
         method: "PUT",
+        credentials: "include",
         body: { status },
       });
+      const updated = data.order;
 
       // Local state-ni yangilaymiz
       const index = orders.value.findIndex((ord) => ord.id === id);
@@ -121,6 +112,19 @@ export const useOrderStore = defineStore("orders", () => {
     }
   }
 
+  async function cancelOrder(id: number) {
+    try {
+      loading.value = true;
+      error.value = null;
+      await updateOrderStatus(id, "cancelled");
+    } catch (err: any) {
+      error.value = err.statusMessage || "Error while cancelling order.";
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   return {
     orders,
     orderDetail,
@@ -131,5 +135,6 @@ export const useOrderStore = defineStore("orders", () => {
     fetchOrderDetail,
     createOrder,
     updateOrderStatus,
+    cancelOrder,
   };
 });

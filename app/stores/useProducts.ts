@@ -119,6 +119,22 @@ export const useProductStore = defineStore("products", () => {
     }
   }
 
+  async function fetchProductById(id: number): Promise<Product | null> {
+    try {
+      loading.value = true;
+      error.value = null;
+      const product = await $fetch<Product>(`${apiBase}/api/products/${id}`, {
+        credentials: "include",
+      });
+      return product;
+    } catch (err: any) {
+      error.value = err.message || "Product not found";
+      return null;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   function isNewProduct(created_at?: string | null) {
     if (!created_at) return false;
 
@@ -145,6 +161,7 @@ export const useProductStore = defineStore("products", () => {
 
     isNewProduct,
     fetchProducts,
+    fetchProductById,
     createProduct,
     updateProduct,
     deleteProduct,

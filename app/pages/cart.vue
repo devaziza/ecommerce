@@ -1,11 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { useCartStore } from "~/stores/useCart";
 import { useFavoriteStore } from "~/stores/useFavorites";
-import { onMounted, ref, nextTick } from "vue";
+import { onMounted, ref, nextTick, computed } from "vue";
 import LoadingSpinner from "~/components/LoadingSpinner.vue";
 
 definePageMeta({
-  middleware: ["auth-role"],
+  middleware: "auth-role",
   layout: "user",
 });
 
@@ -13,6 +13,23 @@ const cartStore = useCartStore();
 const favorites = useFavoriteStore();
 const isLoading = ref(true);
 const animatedItems = ref(new Set());
+const isUpdating = ref(new Set());
+
+const subtotal = computed(() => {
+  return cartStore.cart.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+});
+
+const shipping = computed(() => {
+  return subtotal.value > 100 ? 0 : 9.99;
+});
+
+const tax = computed(() => {
+  return subtotal.value * 0.08; // 8% tax
+});
+
+const total = computed(() => {
+  return subtotal.value + shipping.value + tax.value;
+});
 
 onMounted(async () => {
   await cartStore.fetchCart();
@@ -31,7 +48,7 @@ onMounted(async () => {
   }, 800);
 });
 
-const handleRemoveItem = async (productId) => {
+const handleRemoveItem = async (productId: number) => {
   // Add exit animation
   animatedItems.value.delete(productId);
   
@@ -41,8 +58,8 @@ const handleRemoveItem = async (productId) => {
   }, 300);
 };
 
-const handleQuantityChange = async (productId, action) => {
-  // Add bounce animation to the item
+const handleQuantityChange = async (productId: number, action: string) => {
+  // Add bounce animation to item
   const element = document.getElementById(`cart-item-${productId}`);
   if (element) {
     element.classList.add('animate-cart-bounce');
@@ -51,265 +68,212 @@ const handleQuantityChange = async (productId, action) => {
     }, 600);
   }
   
-  await cartStore.updateQuantity(productId, action);
+  isUpdating.value.add(productId);
+  try {
+    await cartStore.updateQuantity(productId, action);
+  } finally {
+    isUpdating.value.delete(productId);
+  }
+};
+
+const handleCheckout = () => {
+  // Navigate to checkout page
+  navigateTo('/checkout');
 };
 </script>
 
 <template>
-  <section
-    class="min-h-screen py-16 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 relative overflow-hidden"
-  >
-    <!-- Animated Background Elements -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      <div class="absolute -top-40 -right-40 w-80 h-80 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float"></div>
-      <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-float-accent"></div>
-      <div class="absolute top-1/2 left-1/2 w-60 h-60 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float"></div>
-    </div>
-
-    <div class="mx-auto max-w-screen-xl px-4 2xl:px-0 relative z-10">
-      <!-- Title with Animation -->
-      <div class="text-center mb-12 animate-slide-up-blur">
-        <div class="inline-flex items-center gap-3 bg-white/80 backdrop-blur-lg rounded-full px-8 py-4 shadow-2xl border border-white/20">
-          <span class="text-4xl animate-cart-bounce">🛒</span>
-          <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
-            Your Shopping Cart
-          </h1>
-        </div>
-      </div>
-
-      <!-- Loading State -->
-      <div v-if="isLoading" class="flex justify-center items-center py-20">
-        <LoadingSpinner message="Loading your cart..." />
-      </div>
-
-      <!-- Empty Cart with Animation -->
-      <div
-        v-else-if="cartStore.cart.length === 0"
-        class="text-gray-600 text-xl bg-white/60 backdrop-blur-md border border-gray-100 py-20 rounded-3xl text-center shadow-xl animate-scale-in-bounce"
-      >
-        <div class="text-6xl mb-4 animate-heartbeat">🛒</div>
-        <p class="font-semibold text-2xl">Your cart is empty 😔</p>
-        <p class="text-sm mt-3 text-gray-500">
-          Browse items and add your favorites to the cart
-        </p>
-        <button class="mt-6 px-6 py-3 bg-gradient-to-r from-indigo-500 to-cyan-500 text-white rounded-full font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300">
-          Start Shopping
-        </button>
-      </div>
-
-      <!-- Cart Content -->
-      <div
-        v-else
-        class="grid grid-cols-1 lg:grid-cols-3 gap-10"
-      >
-<!-- LEFT: Items -->
-        <div class="lg:col-span-2 space-y-6">
-          <div
-            v-for="(item, index) in cartStore.cart"
-            :key="item.product.id"
-            :id="`cart-item-${item.product.id}`"
-            :class="[
-              'relative p-5 bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-500 group hover:-translate-y-1',
-              animatedItems.has(item.product.id) ? 'animate-slide-in-fade opacity-100' : 'opacity-0 transform translate-x-[-30px]'
-            ]"
-            :style="{ animationDelay: `${index * 150}ms` }"
-          >
-            <!-- Shimmer Effect on Hover -->
-            <div class="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/20 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-            
-            <div class="flex flex-col md:flex-row gap-6">
-              <!-- Image with 3D Rotation -->
-              <div
-                class="relative w-full md:w-40 md:h-32 overflow-hidden rounded-xl bg-gradient-to-br from-indigo-100 to-blue-100 shadow-inner group"
-              >
-                <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <img
-                  :src="item.product.image"
-                  :alt="item.product.name"
-                  class="w-full h-full object-cover group-hover:scale-110 group-hover:rotate-3 transition-all duration-500"
-                />
-                <div class="absolute top-2 left-2 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 text-xs font-semibold text-indigo-600">
-                  {{ item.quantity }}x
-                </div>
-              </div>
-
-              <!-- Info -->
-              <div class="flex-1 flex flex-col justify-between">
-                <div>
-                  <p
-                    class="text-sm font-semibold text-indigo-500 uppercase tracking-wide animate-slide-up-blur"
-                    :style="{ animationDelay: `${index * 150 + 200}ms` }"
-                  >
-                    {{ item.product.category }}
-                  </p>
-                  <h3
-                    class="text-xl font-bold text-gray-900 leading-tight mt-1 group-hover:text-indigo-600 transition-colors duration-300"
-                  >
-                    {{ item.product.name }}
-                  </h3>
-                </div>
-
-                <div
-                  class="flex items-center justify-between mt-4 border-t pt-4 border-gray-200"
-                >
-                  <!-- Quantity with Enhanced Controls -->
-                  <div
-                    class="flex items-center gap-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-full py-2 px-4 shadow-inner border border-gray-200"
-                  >
-                    <button
-                      @click="item.quantity > 1 ? handleQuantityChange(item.product.id, '-') : handleRemoveItem(item.product.id)"
-                      class="w-8 h-8 rounded-full bg-white shadow-md hover:bg-red-50 hover:text-red-500 transition-all duration-300 flex items-center justify-center font-bold text-lg transform hover:scale-110 active:scale-95"
-                    >
-                      –
-                    </button>
-
-                    <span
-                      class="w-8 text-center font-bold text-gray-900 text-lg bg-white rounded-full py-1 shadow-sm"
-                    >
-                      {{ item.quantity }}
-                    </span>
-
-                    <button
-                      @click="handleQuantityChange(item.product.id, '+')"
-                      class="w-8 h-8 rounded-full bg-white shadow-md hover:bg-green-50 hover:text-green-600 transition-all duration-300 flex items-center justify-center font-bold text-lg transform hover:scale-110 active:scale-95"
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  <!-- Price with Animation -->
-                  <div class="text-right">
-                    <p
-                      class="text-xl font-extrabold text-gray-900 tracking-tight bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent"
-                    >
-                      ${{ (item.product.price * item.quantity).toFixed(2) }}
-                    </p>
-                    <p class="text-sm text-gray-500 mt-1">
-                      ${{ item.product.price }} each
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Enhanced Delete Button -->
-            <button
-              class="absolute top-3 right-3 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-300 flex items-center justify-center shadow-md transform hover:scale-110 active:scale-95"
-              @click="handleRemoveItem(item.product.id)"
-            >
-              ✕
-            </button>
+  <div class="bg-gradient-to-b from-gray-50 to-white">
+    <!-- Cart Header -->
+    <section class="bg-white border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Shopping Cart</h1>
+            <p class="text-gray-600">
+              {{ cartStore.cart.length }} {{ cartStore.cart.length === 1 ? 'item' : 'items' }} in your cart
+            </p>
           </div>
+          <NuxtLink
+            to="/shop"
+            class="flex items-center space-x-2 text-accent-600 hover:text-accent-700 font-medium"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            <span>Continue Shopping</span>
+          </NuxtLink>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cart Content -->
+    <section class="py-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Loading State -->
+        <div v-if="isLoading" class="flex justify-center items-center py-20">
+          <LoadingSpinner message="Loading your cart..." />
         </div>
 
-<!-- Order Summary with Enhanced Animation -->
-        <div class="lg:w-96">
-          <div
-            class="rounded-3xl border border-indigo-200 bg-white/80 backdrop-blur-xl p-8 shadow-2xl animate-scale-in-bounce sticky top-8"
-            :style="{ animationDelay: '600ms' }"
+        <!-- Empty Cart -->
+        <div v-else-if="cartStore.cart.length === 0" class="text-center py-16">
+          <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
+            <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-semibold text-gray-900 mb-2">Your cart is empty</h3>
+          <p class="text-gray-600 mb-8 max-w-md mx-auto">
+            Looks like you haven't added any items to your cart yet. Start shopping to fill it up!
+          </p>
+          <NuxtLink
+            to="/shop"
+            class="inline-flex items-center px-8 py-3 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors duration-200"
           >
-            <!-- Animated Header -->
-            <div class="text-center mb-8">
-              <div class="inline-flex items-center gap-3 bg-gradient-to-r from-indigo-50 to-cyan-50 rounded-full px-6 py-3">
-                <div class="w-3 h-3 bg-indigo-500 rounded-full animate-pulse"></div>
-                <h3 class="text-2xl font-bold text-gray-800 tracking-tight">
-                  Order Summary
-                </h3>
-                <div class="w-3 h-3 bg-cyan-500 rounded-full animate-pulse" style="animation-delay: '0.5s'"></div>
+            Start Shopping
+          </NuxtLink>
+        </div>
+
+        <!-- Cart Items -->
+        <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Cart Items List -->
+          <div class="lg:col-span-2 space-y-4">
+            <div
+              v-for="(item, index) in cartStore.cart"
+              :key="item.product.id"
+              :id="`cart-item-${item.product.id}`"
+              :class="[
+                'bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300',
+                animatedItems.has(item.product.id) ? 'animate-slide-in-fade opacity-100' : 'opacity-0 transform translate-x-[-30px]'
+              ]"
+              :style="{ animationDelay: `${index * 100}ms` }"
+            >
+              <div class="flex flex-col sm:flex-row gap-6">
+                <!-- Product Image -->
+                <div class="sm:w-32 h-32 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                  <img
+                    :src="item.product.image"
+                    :alt="item.product.name"
+                    class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+
+                <!-- Product Details -->
+                <div class="flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ item.product.name }}</h3>
+                    <p class="text-gray-600 text-sm mb-2 line-clamp-2">{{ item.product.description }}</p>
+                    <p class="text-accent-600 font-semibold">${{ item.product.price }}</p>
+                  </div>
+
+                  <!-- Quantity and Actions -->
+                  <div class="flex items-center justify-between mt-4">
+                    <!-- Quantity Controls -->
+                    <div class="flex items-center space-x-2">
+                      <button
+                        @click="item.quantity > 1 ? handleQuantityChange(item.product.id, '-') : handleRemoveItem(item.product.id)"
+                        :disabled="isUpdating.has(item.product.id)"
+                        class="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                        </svg>
+                      </button>
+                      <span class="w-12 text-center font-medium">{{ item.quantity }}</span>
+                      <button
+                        @click="handleQuantityChange(item.product.id, '+')"
+                        :disabled="isUpdating.has(item.product.id)"
+                        class="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                      </button>
+                    </div>
+
+                    <!-- Item Total and Remove -->
+                    <div class="flex items-center space-x-4">
+                      <div class="text-right">
+                        <p class="text-lg font-semibold text-gray-900">
+                          ${{ (item.product.price * item.quantity).toFixed(2) }}
+                        </p>
+                      </div>
+                      <button
+                        @click="handleRemoveItem(item.product.id)"
+                        class="p-2 text-gray-400 hover:text-red-500 transition-colors duration-200"
+                      >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div class="space-y-5 text-lg">
-              <!-- Subtotal with Animation -->
-              <div class="flex justify-between items-center group">
-                <span class="text-gray-600 group-hover:text-gray-800 transition-colors">Subtotal</span>
-                <span class="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                  ${{ (cartStore.totalPrice - 99).toFixed(2) }}
-                </span>
-              </div>
+          <!-- Order Summary -->
+          <div class="lg:w-96">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-8">
+              <h3 class="text-xl font-semibold text-gray-900 mb-6">Order Summary</h3>
+              
+              <div class="space-y-4">
+                <!-- Subtotal -->
+                <div class="flex justify-between text-gray-600">
+                  <span>Subtotal</span>
+                  <span class="font-medium text-gray-900">${{ subtotal.toFixed(2) }}</span>
+                </div>
 
-              <!-- Shipping with Icon -->
-              <div class="flex justify-between items-center group">
-                <span class="text-gray-600 group-hover:text-gray-800 transition-colors flex items-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                  </svg>
-                  Shipping
-                </span>
-                <span class="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">$99</span>
-              </div>
-
-              <!-- Animated Divider -->
-              <div class="border-t-2 border-dashed border-indigo-200 pt-6 mt-6 relative">
-                <div class="absolute left-0 top-0 w-full h-0.5 bg-gradient-to-r from-transparent via-indigo-400 to-transparent animate-shimmer"></div>
-                
-                <!-- Total with Glow Effect -->
-                <div class="flex justify-between text-3xl font-extrabold items-center">
-                  <span class="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Total</span>
-                  <span class="text-indigo-600 animate-pulse-glow">
-                    ${{ cartStore.totalPrice }}
+                <!-- Shipping -->
+                <div class="flex justify-between text-gray-600">
+                  <span>Shipping</span>
+                  <span class="font-medium text-gray-900">
+                    {{ shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}` }}
                   </span>
                 </div>
+
+                <!-- Tax -->
+                <div class="flex justify-between text-gray-600">
+                  <span>Tax</span>
+                  <span class="font-medium text-gray-900">${{ tax.toFixed(2) }}</span>
+                </div>
+
+                <!-- Free Shipping Notice -->
+                <div v-if="shipping > 0" class="bg-accent-50 border border-accent-200 rounded-lg p-3">
+                  <p class="text-sm text-accent-700">
+                    Add ${{ (100 - subtotal.value).toFixed(2) }} more for free shipping!
+                  </p>
+                </div>
+
+                <!-- Divider -->
+                <div class="border-t pt-4">
+                  <div class="flex justify-between text-lg font-semibold">
+                    <span>Total</span>
+                    <span class="text-accent-600">${{ total.toFixed(2) }}</span>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <!-- Enhanced Checkout Button -->
-            <button
-              class="mt-10 w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 text-white font-bold text-xl shadow-lg hover:shadow-2xl hover:scale-[1.03] active:scale-95 transition-all duration-300 relative overflow-hidden group"
-            >
-              <span class="relative z-10 flex items-center justify-center gap-2">
-                <svg class="w-5 h-5 group-hover:animate-cart-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9h14l-2-9M5 21h14"></path>
-                </svg>
-                Proceed to Checkout
-              </span>
-              <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </button>
-
-            <!-- Continue Shopping with Animation -->
-            <div class="mt-6 text-center">
-              <a
-                href="#"
-                class="text-indigo-600 hover:text-cyan-600 font-medium flex items-center justify-center gap-2 group transition-all duration-300"
+              <!-- Checkout Button -->
+              <button
+                @click="handleCheckout"
+                class="w-full mt-6 py-3 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors duration-200 font-medium"
               >
-                <span class="group-hover:-translate-x-1 transition-transform duration-300">Continue Shopping</span>
-                <svg
-                  class="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M17 8l4 4m0 0l-4 4m4-4H3"
-                  />
-                </svg>
-              </a>
-            </div>
+                Proceed to Checkout
+              </button>
 
-            <!-- Trust Badges -->
-            <div class="mt-6 flex justify-center gap-4">
-              <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center animate-pulse">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <!-- Security Badge -->
+              <div class="mt-6 flex items-center justify-center space-x-2 text-sm text-gray-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                 </svg>
-              </div>
-              <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center animate-pulse" style="animation-delay: '0.2s'">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                </svg>
-              </div>
-              <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center animate-pulse" style="animation-delay: '0.4s'">
-                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                </svg>
+                <span>Secure Checkout</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </div>
 </template>

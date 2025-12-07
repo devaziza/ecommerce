@@ -4,7 +4,7 @@ export interface Product {
   price: number;
   category_id: number;
   description: string;
-  image: string;
+  image_url: string;
   created_at?: string;
 }
 
@@ -18,10 +18,12 @@ export interface Category {
 
 export interface Order {
   id: number;
-  user_id: number;
+  user_id?: number;
   total_price: number;
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   created_at?: string;
+  total_items?: number;
+  items?: OrderItem[];
 }
 
 export interface OrderItem {
@@ -32,6 +34,7 @@ export interface OrderItem {
   price: number;
   total?: number;
   product_name?: string;
+  product_image?: string;
   created_at?: string;
 }
  

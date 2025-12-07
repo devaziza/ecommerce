@@ -118,7 +118,7 @@ export const useCartStore = defineStore("cart", () => {
           product_id: item.product_id,
           name: item.name,
           price: Number(item.price),
-          image: item.image_url,
+          image_url: item.image_url,
           category_id: item.category_id,
           description: item.description,
           category: item.category,

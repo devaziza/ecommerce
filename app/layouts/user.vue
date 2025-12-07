@@ -1,13 +1,15 @@
- <script>
+<script>
 import Navbar from "~/components/Navbar.vue";
 import Sidebar from "~/components/Sidebar.vue";
 import FooterPage from "~/components/FooterPage.vue";
 </script>
- <template>
-    <div>
-     <Navbar />
+<template>
+  <div class="min-h-screen">
+    <Navbar />
     <Sidebar />
-    <slot />
+    <main class="pt-16">
+      <slot />
+    </main>
     <FooterPage />
   </div>
- </template>
+</template>

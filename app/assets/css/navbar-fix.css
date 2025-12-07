@@ -1,0 +1,80 @@
+/* Global styles for proper navbar spacing */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  padding-top: 0; /* Reset any default padding */
+  margin: 0;
+}
+
+/* Only apply padding to main tags that don't already have it */
+main:not(.pt-16) {
+  padding-top: 4rem; /* 64px - navbar height */
+}
+
+/* Remove excessive padding from page containers */
+.page-container {
+  padding-top: 0 !important;
+}
+
+/* Ensure no double padding */
+body > div > div {
+  padding-top: 0;
+}
+
+/* Fix for specific page containers */
+.min-h-screen > main:not(.pt-16) {
+  padding-top: 4rem;
+}
+
+/* Custom animations */
+@keyframes cart-bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes scale-in-bounce {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.animate-cart-bounce {
+  animation: cart-bounce 0.3s ease-in-out;
+}
+
+.animate-scale-in-bounce {
+  animation: scale-in-bounce 0.3s ease-in-out;
+}
+
+/* Fix for dropdown z-index issues */
+.dropdown-menu {
+  z-index: 45;
+}
+
+/* Modal z-index fixes */
+.modal-overlay {
+  z-index: 50;
+}
+
+.modal-content {
+  z-index: 51;
+}
+
+/* Ensure proper stacking context */
+.navbar-container {
+  position: relative;
+  z-index: 40;
+}
+
+/* Mobile menu fixes */
+@media (max-width: 1024px) {
+  .mobile-menu-overlay {
+    z-index: 30;
+  }
+  
+  .mobile-menu-content {
+    z-index: 35;
+  }
+}

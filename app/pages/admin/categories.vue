@@ -1,65 +1,51 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import { useProductStore } from "~/stores/useProducts";
 import { useCategoryStore } from "~/stores/useCategory";
 import { useAuthStore } from "~/stores/useAuth";
-import type { Product, Category } from "~/types/models";
+import type { Category } from "~/types/models";
 
 definePageMeta({
   middleware: "auth-role",
   layout: "admin",
 });
 
-const productStore = useProductStore();
 const categoryStore = useCategoryStore();
 const authStore = useAuthStore();
 
 const isLoading = ref(false);
 const error = ref<string | null>(null);
 const searchQuery = ref("");
-const selectedCategory = ref("all");
 const sortBy = ref("newest");
 const showCreateModal = ref(false);
-const editingProduct = ref<Product | null>(null);
+const editingCategory = ref<Category | null>(null);
 const deleteConfirmId = ref<number | null>(null);
 
 // Form data
 const formData = ref({
   name: "",
   description: "",
-  price: 0,
-  category_id: "",
+  image_url: "",
 });
 
 // Computed properties
-const products = computed(() => productStore.products);
 const categories = computed(() => categoryStore.categories);
 
-const filteredProducts = computed(() => {
-  let filtered = products.value;
-  
-  // Filter by category
-  if (selectedCategory.value !== "all") {
-    filtered = filtered.filter(product => product.category_id === parseInt(selectedCategory.value));
-  }
+const filteredCategories = computed(() => {
+  let filtered = categories.value;
   
   // Filter by search
   if (searchQuery.value) {
-    filtered = filtered.filter(product =>
-      product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.value.toLowerCase())
+    filtered = filtered.filter(category =>
+      category.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      category.description.toLowerCase().includes(searchQuery.value.toLowerCase())
     );
   }
   
-  // Sort products
+  // Sort categories
   return filtered.sort((a, b) => {
     switch (sortBy.value) {
       case "name":
         return a.name.localeCompare(b.name);
-      case "price-low":
-        return a.price - b.price;
-      case "price-high":
-        return b.price - a.price;
       case "newest":
         return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
       case "oldest":
@@ -74,18 +60,9 @@ const sortOptions = [
   { value: "newest", label: "Newest First" },
   { value: "oldest", label: "Oldest First" },
   { value: "name", label: "Name (A-Z)" },
-  { value: "price-low", label: "Price (Low to High)" },
-  { value: "price-high", label: "Price (High to Low)" },
 ];
 
 // Utility functions
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(price);
-};
-
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString("en-US", {
@@ -95,42 +72,35 @@ const formatDate = (dateString: string) => {
   });
 };
 
-const getCategoryName = (categoryId: number) => {
-  const category = categories.value.find(c => c.id === categoryId);
-  return category?.name || "Unknown";
-};
-
 // Modal functions
 const openCreateModal = () => {
-  editingProduct.value = null;
+  editingCategory.value = null;
   formData.value = {
     name: "",
     description: "",
-    price: 0,
-    category_id: "",
+    image_url: "",
   };
   showCreateModal.value = true;
 };
 
-const openEditModal = (product: Product) => {
-  editingProduct.value = product;
+const openEditModal = (category: Category) => {
+  editingCategory.value = category;
   formData.value = {
-    name: product.name,
-    description: product.description,
-    price: product.price,
-    category_id: product.category_id.toString(),
+    name: category.name,
+    description: category.description,
+    image_url: category.image_url || "",
   };
   showCreateModal.value = true;
 };
 
 const closeModal = () => {
   showCreateModal.value = false;
-  editingProduct.value = null;
+  editingCategory.value = null;
   error.value = null;
 };
 
-const confirmDelete = (productId: number) => {
-  deleteConfirmId.value = productId;
+const confirmDelete = (categoryId: number) => {
+  deleteConfirmId.value = categoryId;
 };
 
 const cancelDelete = () => {
@@ -143,54 +113,51 @@ const handleSave = async () => {
     isLoading.value = true;
     error.value = null;
 
-    if (editingProduct.value) {
-      // Update existing product
-      await productStore.updateProduct(editingProduct.value.id, formData.value);
+    if (editingCategory.value) {
+      // Update existing category
+      await categoryStore.updateCategory(editingCategory.value.id, formData.value);
     } else {
-      // Create new product
-      await productStore.createProduct(formData.value);
+      // Create new category
+      await categoryStore.createCategory(formData.value);
     }
 
     closeModal();
-    await loadProducts();
+    await loadCategories();
   } catch (err: any) {
-    error.value = err.message || "Failed to save product";
+    error.value = err.message || "Failed to save category";
   } finally {
     isLoading.value = false;
   }
 };
 
-const handleDelete = async (productId: number) => {
+const handleDelete = async (categoryId: number) => {
   try {
     isLoading.value = true;
-    await productStore.deleteProduct(productId);
+    await categoryStore.deleteCategory(categoryId);
     deleteConfirmId.value = null;
-    await loadProducts();
+    await loadCategories();
   } catch (err: any) {
-    error.value = err.message || "Failed to delete product";
+    error.value = err.message || "Failed to delete category";
   } finally {
     isLoading.value = false;
   }
 };
 
-// Load products
-const loadProducts = async () => {
+// Load categories
+const loadCategories = async () => {
   try {
     isLoading.value = true;
     error.value = null;
-    await productStore.fetchProducts();
+    await categoryStore.fetchCategories();
   } catch (err: any) {
-    error.value = err.message || "Failed to load products";
+    error.value = err.message || "Failed to load categories";
   } finally {
     isLoading.value = false;
   }
 };
 
-onMounted(async () => {
-  await Promise.all([
-    loadProducts(),
-    categoryStore.fetchCategories(),
-  ]);
+onMounted(() => {
+  loadCategories();
 });
 </script>
 
@@ -199,8 +166,8 @@ onMounted(async () => {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Products Management</h1>
-        <p class="text-gray-600">{{ filteredProducts.length }} of {{ products.length }} products</p>
+        <h1 class="text-2xl font-bold text-gray-900">Categories Management</h1>
+        <p class="text-gray-600">{{ filteredCategories.length }} categories</p>
       </div>
       
       <div class="flex flex-col sm:flex-row gap-3">
@@ -208,26 +175,16 @@ onMounted(async () => {
           @click="openCreateModal"
           class="px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors duration-200 font-medium"
         >
-          Add Product
+          Add Category
         </button>
         
         <div class="flex items-center space-x-2">
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search products..."
+            placeholder="Search categories..."
             class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent"
           />
-          
-          <select
-            v-model="selectedCategory"
-            class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent"
-          >
-            <option value="all">All Categories</option>
-            <option v-for="category in categories" :key="category.id" :value="category.id.toString()">
-              {{ category.name }}
-            </option>
-          </select>
           
           <select
             v-model="sortBy"
@@ -250,7 +207,7 @@ onMounted(async () => {
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
         </div>
-        <p class="text-gray-600">Loading products...</p>
+        <p class="text-gray-600">Loading categories...</p>
       </div>
     </div>
 
@@ -262,10 +219,10 @@ onMounted(async () => {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <h3 class="text-xl font-semibold text-gray-900 mb-2">Error Loading Products</h3>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">Error Loading Categories</h3>
         <p class="text-gray-600 mb-6">{{ error }}</p>
         <button
-          @click="loadProducts"
+          @click="loadCategories"
           class="px-6 py-3 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors duration-200"
         >
           Try Again
@@ -273,94 +230,71 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Products Table -->
-    <div v-else class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-100">
-            <tr v-for="product in filteredProducts" :key="product.id" class="hover:bg-gray-50">
-              <td class="px-6 py-4">
-                <div class="flex items-center space-x-3">
-                  <div class="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                    <img
-                      v-if="product.image_url"
-                      :src="product.image_url"
-                      :alt="product.name"
-                      class="w-full h-full object-cover"
-                    />
-                    <div v-else class="w-full h-full bg-gray-300 flex items-center justify-center">
-                      <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M9 16h.01M5 9h14l1 12H4L5 9z"></path>
-                      </svg>
-                    </div>
-                  </div>
-                  <div>
-                    <p class="font-medium text-gray-900">{{ product.name }}</p>
-                    <p class="text-sm text-gray-500">ID: {{ product.id }}</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-6 py-4 text-sm text-gray-600">
-                {{ getCategoryName(product.category_id) }}
-              </td>
-              <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                {{ formatPrice(product.price) }}
-              </td>
-              <td class="px-6 py-4">
-                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Active
-                </span>
-              </td>
-              <td class="px-6 py-4 text-sm text-gray-600">
-                {{ formatDate(product.created_at || '') }}
-              </td>
-              <td class="px-6 py-4 text-sm">
-                <div class="flex space-x-2">
-                  <button
-                    @click="openEditModal(product)"
-                    class="text-accent-600 hover:text-accent-700 font-medium"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    @click="confirmDelete(product.id)"
-                    class="text-red-600 hover:text-red-700 font-medium"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Categories Grid -->
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div
+        v-for="category in filteredCategories"
+        :key="category.id"
+        class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group"
+      >
+        <!-- Category Image -->
+        <div class="aspect-video bg-gray-100 relative">
+          <img
+            v-if="category.image_url"
+            :src="category.image_url"
+            :alt="category.name"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          <div v-else class="w-full h-full bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center">
+            <span class="text-white text-4xl font-bold">{{ category.name.charAt(0) }}</span>
+          </div>
+          
+          <!-- Category Name Overlay -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+            <h3 class="text-white text-xl font-bold">{{ category.name }}</h3>
+          </div>
+        </div>
+        
+        <!-- Category Info -->
+        <div class="p-4">
+          <div class="flex items-start justify-between mb-3">
+            <h3 class="text-lg font-semibold text-gray-900">{{ category.name }}</h3>
+            <div class="flex space-x-2">
+              <button
+                @click="openEditModal(category)"
+                class="text-accent-600 hover:text-accent-700 font-medium text-sm"
+              >
+                Edit
+              </button>
+              <button
+                @click="confirmDelete(category.id)"
+                class="text-red-600 hover:text-red-700 font-medium text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+          <p class="text-gray-600 text-sm line-clamp-3">{{ category.description }}</p>
+          <p class="text-xs text-gray-500 mt-2">Created: {{ formatDate(category.created_at || '') }}</p>
+        </div>
       </div>
       
       <!-- Empty State -->
-      <div v-if="filteredProducts.length === 0" class="text-center py-16">
+      <div v-if="filteredCategories.length === 0" class="col-span-full text-center py-16">
         <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
           <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4M5 7h14l-7 7 7-7M5 7v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v2M7 7h10"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v2M7 7h10"></path>
           </svg>
         </div>
-        <h3 class="text-2xl font-semibold text-gray-900 mb-2">No products found</h3>
+        <h3 class="text-2xl font-semibold text-gray-900 mb-2">No categories found</h3>
         <p class="text-gray-600 mb-8">
-          {{ searchQuery || selectedCategory !== 'all' ? 'Try adjusting your filters' : 'No products available' }}
+          {{ searchQuery ? 'Try adjusting your search terms' : 'No categories available' }}
         </p>
         <button
           @click="openCreateModal"
           class="px-6 py-3 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors duration-200"
         >
-          Add First Product
+          Create First Category
         </button>
       </div>
     </div>
@@ -370,7 +304,7 @@ onMounted(async () => {
       <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div class="p-6 border-b border-gray-100">
           <h2 class="text-xl font-semibold text-gray-900">
-            {{ editingProduct ? 'Edit Product' : 'Create New Product' }}
+            {{ editingCategory ? 'Edit Category' : 'Create New Category' }}
           </h2>
         </div>
         
@@ -381,13 +315,13 @@ onMounted(async () => {
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Category Name</label>
             <input
               v-model="formData.name"
               type="text"
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent"
-              placeholder="Enter product name"
+              placeholder="Enter category name"
             />
           </div>
           
@@ -398,37 +332,18 @@ onMounted(async () => {
               required
               rows="4"
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent"
-              placeholder="Enter product description"
+              placeholder="Enter category description"
             ></textarea>
           </div>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Price</label>
-              <input
-                v-model.number="formData.price"
-                type="number"
-                required
-                min="0"
-                step="0.01"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent"
-                placeholder="0.00"
-              />
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
-              <select
-                v-model="formData.category_id"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent"
-              >
-                <option value="">Select a category</option>
-                <option v-for="category in categories" :key="category.id" :value="category.id.toString()">
-                  {{ category.name }}
-                </option>
-              </select>
-            </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Image URL (optional)</label>
+            <input
+              v-model="formData.image_url"
+              type="url"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent"
+              placeholder="https://example.com/image.jpg"
+            />
           </div>
         </form>
         
@@ -449,7 +364,7 @@ onMounted(async () => {
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span>{{ isLoading ? 'Saving...' : (editingProduct ? 'Update Product' : 'Create Product') }}</span>
+            <span>{{ isLoading ? 'Saving...' : (editingCategory ? 'Update Category' : 'Create Category') }}</span>
           </button>
         </div>
       </div>
@@ -464,8 +379,8 @@ onMounted(async () => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-gray-900 mb-2">Delete Product</h3>
-          <p class="text-gray-600 mb-6">Are you sure you want to delete this product? This action cannot be undone.</p>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">Delete Category</h3>
+          <p class="text-gray-600 mb-6">Are you sure you want to delete this category? This action cannot be undone.</p>
           
           <div class="flex justify-center space-x-4">
             <button
@@ -483,7 +398,7 @@ onMounted(async () => {
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <span>{{ isLoading ? 'Deleting...' : 'Delete Product' }}</span>
+              <span>{{ isLoading ? 'Deleting...' : 'Delete Category' }}</span>
             </button>
           </div>
         </div>
@@ -491,3 +406,12 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>

@@ -7,9 +7,10 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   runtimeConfig: {
     public: {
-      apiBase: process.env.API_BASE_URL
+      apiBase: process.env.API_BASE_URL || 'http://localhost:5000'
     }
   },
+  css: ['~/assets/css/navbar-fix.css'],
   postcss: {
     plugins: {
       tailwindcss: {},
