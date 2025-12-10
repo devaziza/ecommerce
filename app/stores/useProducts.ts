@@ -33,7 +33,7 @@ export const useProductStore = defineStore("products", () => {
     }
   }
 
-  async function createProduct(data: Omit<Product, "id">) {
+  async function createProduct(data: FormData) {
     try {
       loading.value = true;
       const newProduct = await $fetch<Product>(
@@ -146,7 +146,7 @@ export const useProductStore = defineStore("products", () => {
   }
 
   const latestProducts = computed(() =>
-    [...products.value].reverse().slice(0, 3)
+    [...products.value].reverse().slice(0, 8)
   );
 
   return {

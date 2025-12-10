@@ -10,7 +10,7 @@ body {
 
 /* Only apply padding to main tags that don't already have it */
 main:not(.pt-16) {
-  padding-top: 4rem; /* 64px - navbar height */
+  padding-top: 2rem; /* 64px - navbar height */
 }
 
 /* Remove excessive padding from page containers */

@@ -2,42 +2,40 @@
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-const search = ref("");
+const props = defineProps<{
+  class?: string;
+  placeholder?: string;
+}>();
+
+const searchQuery = ref("");
+const isSearchOpen = ref(false);
 const route = useRoute();
 const router = useRouter();
 
 const handleSearch = () => {
-  if (search.value.trim()) {
+  if (searchQuery.value.trim()) {
     // Foydalanuvchini /search sahifasiga qidiruv so'zi bilan birga yo'naltiramiz
     // URL shunday ko'rinadi: /search?q=so'zingiz
     navigateTo({
       path: "/search",
       query: {
-        q: search.value.trim(),
+        q: searchQuery.value.trim(),
       },
     });
+    isSearchOpen.value = false;
+    searchQuery.value = "";
   }
 };
-
-watch(search, (newVal) => {
-  if (!newVal.trim()) {
-    if (route.path === "/search") {
-      router.back();
-    }
-  }
-});
 </script>
 
 <template>
-  <form @submit.prevent="handleSearch" class="flex w-full justify-center">
-    <div class="flex w-full justify-center items-center space-x-8">
-      <input
-        @keyup="handleSearch"
-        v-model="search"
-        type="text"
-        placeholder="Searching for products…"
-        class="hidden lg:flex w-[400px] gap-6 border border-gray-200 bg-white rounded-2xl shadow-lg py-2 px-4"
-      />
-    </div>
+  <form @submit.prevent="handleSearch">
+    <input
+      v-model="searchQuery"
+      @keyup.enter="handleSearch"
+      type="text"
+      :placeholder="placeholder || 'Search products, categories...'"
+      :class="['w-full pl-4 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent focus:bg-white transition-all duration-300 group-hover:border-gray-300', props.class]"
+    />
   </form>
 </template>

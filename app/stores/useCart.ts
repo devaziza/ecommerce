@@ -9,6 +9,7 @@ export const useCartStore = defineStore("cart", () => {
   const cart = ref<{ product: Product; quantity: number }[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
+  const cartItemCount = computed(() => cart.value.length || 0);
 
   const totalPrice = computed(() =>
     cart.value.reduce(
@@ -35,17 +36,17 @@ export const useCartStore = defineStore("cart", () => {
         },
       });
       console.log("Added to cart:", newItem);
-      const existing = cart.value.find(
-        (item) => item.product.id === product.id
-      );
-      if (existing) {
-        existing.quantity++;
-      } else {
-        cart.value.push({
-          product,
-          quantity: 1,
-        });
-      }
+      // const existing = cart.value.find(
+      //   (item) => item.product.id === product.id
+      // );
+      // if (existing) {
+      //   existing.quantity++;
+      // } else {
+      //   cart.value.push({
+      //     product,
+      //     quantity: 1,
+      //   });
+      // }
     } catch (err: any) {
       error.value = err?.data?.message || "Failed to add to cart";
     } finally {
@@ -104,6 +105,7 @@ export const useCartStore = defineStore("cart", () => {
           price: string | number;
           quantity: number;
           image_url: string;
+          stock: number;
           description: string;
           category_id: number;
           category: string;
@@ -119,6 +121,7 @@ export const useCartStore = defineStore("cart", () => {
           name: item.name,
           price: Number(item.price),
           image_url: item.image_url,
+          stock: item.stock,
           category_id: item.category_id,
           description: item.description,
           category: item.category,

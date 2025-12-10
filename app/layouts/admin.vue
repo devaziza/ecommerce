@@ -157,7 +157,11 @@
 
         <!-- Logout Button -->
         <div class="mt-6">
-          <button
+  <UiBaseButton @click="handleLogout">
+    Save
+  </UiBaseButton>
+
+          <!-- <button
             @click="handleLogout"
             class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
           >
@@ -175,17 +179,18 @@
               ></path>
             </svg>
             <span>Logout</span>
-          </button>
+          </button> -->
         </div>
       </div>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-auto">
-      <div class="p-8">
+    <div class="flex-1 overflow-auto">
+      <div class="">
+        <AdminNavbar />
         <slot />
       </div>
-    </main>
+    </div>
   </div>
 </template>
 

@@ -104,7 +104,7 @@ onMounted(async () => {
                 <!-- Product Image -->
                 <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                   <img
-                    :src="item.product.image"
+                    :src="item.product.image_url"
                     :alt="item.product.name"
                     class="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                   />

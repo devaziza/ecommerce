@@ -26,24 +26,24 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute, useRouter } from "vue-router"
-import { useAuthStore } from "@/stores/useAuth"
+import { useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/useAuth";
 
-const route = useRoute()
-const router = useRouter()
-const store = useAuthStore()
+const route = useRoute();
+const router = useRouter();
+const store = useAuthStore();
 
 const links = [
   { name: "Dashboard", path: "/admin/dashboard" },
   { name: "Products", path: "/admin/products" },
   { name: "Orders", path: "/admin/orders" },
   { name: "Users", path: "/admin/users" },
-]
+];
 
 const logout = async () => {
-  await store.logout()
-  router.push("/login")
-}
+  await store.logout();
+  router.push("/login");
+};
 </script>
 
 <!-- 💬 COMMENT:

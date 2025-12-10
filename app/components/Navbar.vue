@@ -1,23 +1,30 @@
 <script setup lang="ts">
-import { useUI } from "~/composables/useUI";
 import { useAuthStore } from "~/stores/useAuth";
 import { useCartStore } from "~/stores/useCart";
 import { useCategoryStore } from "~/stores/useCategory";
+import { useFavoriteStore } from "~/stores/useFavorites";
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import {
+  ChevronDown,
+  ChevronUp,
+  Heart,
+  MenuIcon,
+  SearchIcon,
+} from "lucide-vue-next";
+import Search from "./Search.vue";
 
 const user = useAuthStore();
-const cart = useCartStore();
+const cartStore = useCartStore();
 const categoryStore = useCategoryStore();
 const router = useRouter();
-
-const { isNav } = useUI();
+const favoriteStore = useFavoriteStore();
 
 const isMobileMenuOpen = ref(false);
 const isSearchOpen = ref(false);
 const searchQuery = ref("");
 const isScrolled = ref(false);
 
-const cartItemCount = computed(() => cart.items?.length || 0);
+const favoriteItemCount = computed(() => favoriteStore.favorites.length || 0);
 const isLoggedIn = computed(() => user.isAuthenticated);
 const categories = computed(() => categoryStore.categories);
 
@@ -50,6 +57,8 @@ onMounted(() => {
   window.addEventListener("scroll", handleScroll);
   // Fetch categories on component mount
   categoryStore.fetchCategories();
+  cartStore.fetchCart();
+  favoriteStore.fetchFavorites();
 });
 
 onUnmounted(() => {
@@ -76,21 +85,7 @@ onUnmounted(() => {
             class="lg:hidden p-2 rounded-lg text-gray-600 hover:text-accent hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300"
             aria-label="Toggle mobile menu"
           >
-            <svg
-              v-if="!isMobileMenuOpen"
-              class="h-6 w-6 transition-transform duration-300"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
+            <MenuIcon v-if="!isMobileMenuOpen" />
             <svg
               v-else
               class="h-6 w-6 transition-transform duration-300"
@@ -111,12 +106,12 @@ onUnmounted(() => {
           <!-- Logo -->
           <NuxtLink to="/" class="flex items-center space-x-2 group">
             <div
-              class="w-8 h-8 bg-gradient-to-br from-accent-500 to-accent-600 rounded-lg flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110"
+              class="w-8 h-8 bg-gradient-to-br from-pink-400 to-purple-600 rounded-lg flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110"
             >
               <span class="text-white font-bold text-lg">L</span>
             </div>
             <span
-              class="text-xl font-bold bg-gradient-to-r from-accent-600 to-accent-700 bg-clip-text text-transparent"
+              class="text-xl pr-4 font-bold bg-gradient-to-r from-pink-500 to-purple-700 bg-clip-text text-transparent"
             >
               Luxe
             </span>
@@ -139,19 +134,7 @@ onUnmounted(() => {
               class="text-gray-700 hover:text-accent font-medium transition-colors duration-200 flex items-center space-x-1"
             >
               <span>Categories</span>
-              <svg
-                class="w-4 h-4 transition-transform duration-300 group-hover:rotate-180"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 9l-7 7-7-7"
-                ></path>
-              </svg>
+              <ChevronDown class="text-gray-700 h-4 w-4" />
             </button>
             <!-- Dropdown Menu -->
             <div
@@ -163,25 +146,7 @@ onUnmounted(() => {
                   v-if="categoryStore.loading"
                   class="px-4 py-3 text-sm text-gray-500 flex items-center space-x-2"
                 >
-                  <svg
-                    class="w-4 h-4 animate-spin"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      class="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="4"
-                    ></circle>
-                    <path
-                      class="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+                  <ChevronUp />
                   <span>Loading...</span>
                 </div>
 
@@ -252,30 +217,13 @@ onUnmounted(() => {
         <!-- Center Section: Search Bar (Desktop) -->
         <div class="hidden lg:flex flex-1 max-w-xl mx-8">
           <div class="relative w-full group">
-            <input
-              v-model="searchQuery"
-              @keyup.enter="handleSearch"
-              type="text"
-              placeholder="Search products, brands, categories..."
+            <Search
               class="w-full pl-4 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent focus:bg-white transition-all duration-300 group-hover:border-gray-300"
             />
             <button
-              @click="handleSearch"
-              class="absolute right-1 top-1/2 transform -translate-y-1/2 p-2 bg-accent text-white rounded-full hover:bg-accent-600 focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300"
+              class="absolute right-1 top-1/2 transform -translate-y-1/2 p-2 bg-purple-700 text-white rounded-full hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300"
             >
-              <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                ></path>
-              </svg>
+              <SearchIcon class="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -288,29 +236,32 @@ onUnmounted(() => {
             class="lg:hidden p-2 rounded-lg text-gray-600 hover:text-accent hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300"
             aria-label="Search"
           >
-            <svg
-              class="h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              ></path>
-            </svg>
+            <SearchIcon class="h-5 w-5" />
           </button>
 
           <!-- Wishlist -->
           <NuxtLink
             to="/favorites"
-            class="hidden sm:flex p-2 rounded-lg text-gray-600 hover:text-accent hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300 relative group"
+            class="hidden sm:flex p-2 rounded-full text-gray-600 hover:text-accent hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300 relative group"
             aria-label="Wishlist"
           >
+            <Heart />
+            <span
+              v-if="favoriteItemCount > 0"
+              class="absolute -top-1 -right-1 h-5 w-5 bg-purple-700 text-white text-xs rounded-full flex items-center justify-center font-medium animate-scale-in-bounce"
+            >
+              {{ favoriteItemCount }}
+            </span>
+          </NuxtLink>
+
+          <!-- Cart -->
+          <NuxtLink
+            to="/cart"
+            class="relative p-2 rounded-lg text-gray-600 hover:text-accent hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300 group"
+            aria-label="Shopping cart"
+          >
             <svg
-              class="h-6 w-6 transition-transform duration-300 group-hover:scale-110"
+              class="h-6 w-6 transition-transform duration-300 group-hover:scale-110 group-hover:animate-cart-bounce"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -319,9 +270,15 @@ onUnmounted(() => {
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="1.5"
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
               ></path>
             </svg>
+            <span
+              v-if="cartStore.cart.length > 0"
+              class="absolute -top-1 -right-1 h-5 w-5 bg-purple-700 text-white text-xs rounded-full flex items-center justify-center font-medium animate-scale-in-bounce"
+            >
+              {{ cartStore.cart.length }}
+            </span>
           </NuxtLink>
 
           <!-- Account -->
@@ -386,33 +343,6 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
-
-          <!-- Cart -->
-          <NuxtLink
-            to="/cart"
-            class="relative p-2 rounded-lg text-gray-600 hover:text-accent hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300 group"
-            aria-label="Shopping cart"
-          >
-            <svg
-              class="h-6 w-6 transition-transform duration-300 group-hover:scale-110 group-hover:animate-cart-bounce"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-              ></path>
-            </svg>
-            <span
-              v-if="cartItemCount > 0"
-              class="absolute -top-1 -right-1 h-5 w-5 bg-accent text-white text-xs rounded-full flex items-center justify-center font-medium animate-scale-in-bounce"
-            >
-              {{ cartItemCount }}
-            </span>
-          </NuxtLink>
         </div>
       </div>
     </nav>
@@ -431,32 +361,9 @@ onUnmounted(() => {
         class="lg:hidden bg-white border-t border-gray-200 px-4 py-4"
       >
         <div class="relative">
-          <input
-            v-model="searchQuery"
-            @keyup.enter="handleSearch"
-            type="text"
-            placeholder="Search products..."
+          <Search
             class="w-full pl-4 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent focus:bg-white transition-all duration-300"
-            autofocus
           />
-          <button
-            @click="handleSearch"
-            class="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-accent text-white rounded-lg hover:bg-accent-600 focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all duration-300"
-          >
-            <svg
-              class="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              ></path>
-            </svg>
-          </button>
         </div>
       </div>
     </Transition>

@@ -50,7 +50,7 @@ const categories = [
       <div class="text-center mb-16 animate-fade-in-up">
         <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
           Shop by
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-accent-600 to-accent-700">
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-700">
             Category
           </span>
         </h2>
@@ -124,7 +124,7 @@ const categories = [
       <div class="text-center mt-12">
         <NuxtLink
           to="/categories"
-          class="inline-flex items-center px-8 py-4 border-2 border-accent-600 text-accent-600 font-semibold rounded-xl hover:bg-accent-600 hover:text-white transform hover:scale-105 transition-all duration-300"
+          class="inline-flex items-center px-8 py-4 border-2 border-pink-600 text-pink-600 font-semibold rounded-xl hover:bg-purple-600 hover:text-white transform hover:scale-105 transition-all duration-300"
         >
           View All Categories
           <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

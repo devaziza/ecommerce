@@ -119,7 +119,7 @@ onMounted(async () => {
         <div class="text-center">
           <h1 class="text-4xl font-bold text-gray-900 mb-4">
             Shop by
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-accent-600 to-accent-700">
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-700">
               Category
             </span>
           </h1>
@@ -143,7 +143,7 @@ onMounted(async () => {
             v-model="searchQuery"
             type="text"
             placeholder="Search categories..."
-            class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-accent/20 focus:border-accent focus:bg-white transition-all duration-300"
+            class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-lg transition-all duration-300"
           />
         </div>
       </div>
@@ -153,7 +153,7 @@ onMounted(async () => {
     <div v-if="categoryStore.loading" class="flex justify-center items-center py-20">
       <div class="text-center">
         <div class="inline-flex items-center justify-center w-16 h-16 bg-accent-100 rounded-full mb-4">
-          <svg class="animate-spin h-8 w-8 text-accent-600" fill="none" viewBox="0 0 24 24">
+          <svg class="animate-spin h-8 w-8 text-pink-600" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
@@ -310,7 +310,6 @@ onMounted(async () => {
 <style scoped>
 .line-clamp-2 {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

@@ -58,11 +58,11 @@ const handleRemoveItem = async (productId: number) => {
   }, 300);
 };
 
-const handleQuantityChange = async (productId: number, action: string) => {
+const handleQuantityChange = async (productId: number, action: "+" | "-") => {
   // Add bounce animation to item
   const element = document.getElementById(`cart-item-${productId}`);
+  
   if (element) {
-    element.classList.add('animate-cart-bounce');
     setTimeout(() => {
       element.classList.remove('animate-cart-bounce');
     }, 600);
@@ -152,7 +152,7 @@ const handleCheckout = () => {
                 <!-- Product Image -->
                 <div class="sm:w-32 h-32 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                   <img
-                    :src="item.product.image"
+                    :src="item.product.image_url"
                     :alt="item.product.name"
                     class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                   />
@@ -239,12 +239,6 @@ const handleCheckout = () => {
                   <span class="font-medium text-gray-900">${{ tax.toFixed(2) }}</span>
                 </div>
 
-                <!-- Free Shipping Notice -->
-                <div v-if="shipping > 0" class="bg-accent-50 border border-accent-200 rounded-lg p-3">
-                  <p class="text-sm text-accent-700">
-                    Add ${{ (100 - subtotal.value).toFixed(2) }} more for free shipping!
-                  </p>
-                </div>
 
                 <!-- Divider -->
                 <div class="border-t pt-4">
